@@ -5,36 +5,32 @@ import re #serve per manipolare i pattern di testo -> nel nostro caso per la fun
 from pathlib import Path #manipola nomi file e percorsi (estraiamo il nome file senza estensione)
 import os # gestione file sul SO lousiamo per rinominare i file con timestamp
 from django.utils import timezone #per generare timestamp sui nomi file
+from filer.fields.file import FilerFileField 
 
 #metodo che genera il percordo dove salvare il file caricato
 #Struttura: Struttura: cataloghi/{slug_catalogo}/{filename_timestamp}
 #Esempio: cataloghi/componenti-a1-a114/A31 Perle_20251012_143520.jpg
 
-def cartella_upload_path(instance, filename): #instance oggetto che stai salvando, filename il nome del file originale
-    # Estrai nome cartella dal filename (senza estensione)
-    nome_cartella= Path(filename).stem #stem prende solo il nome del filename senza estensione
+def cartella_upload_path(instance, filename):
+    # Input: filename = "A31 Perle.jpg"
     
-    #Creo il timestamp
-    timestamp=timezone.now().strftime('%Y%m%d_%H%M%S') 
+    # 1. Estrai nome senza estensione
+    nome_cartella = Path(filename).stem  # "A31 Perle"
     
-    #Separa il nome dall'estensione e prende quest'ultima
-    ext = os.path.splitext(filename)[1] 
+    # 2. Timestamp corrente
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')  # "20251012_143520"
     
-    #Rimuove caratteri problematici per il filesystem
-    nome_safe = re.sub(r'[^\w\s-]', '', nome_cartella) 
+    # 3. Estensione
+    ext = os.path.splitext(filename)[1]  # ".jpg"
     
-    #Combina nome, timestamp e estensione
-    new_filename = f"{nome_safe}_{timestamp}{ext}" 
-
-    # Risali al catalogo tramite categoria
-    if instance.categoria and instance.categoria.catalogo:
-        catalogo_slug = instance.categoria.catalogo.slug
-    else:
-        catalogo_slug = 'senza-catalogo'
+    # 4. Rimuovi caratteri speciali
+    nome_safe = re.sub(r'[^\w\s-]', '', nome_cartella)  # "A31 Perle"
     
-    # Ritorna percorso: cataloghi/{catalogo_slug}/{filename}
-    return os.path.join('cataloghi', catalogo_slug, new_filename)
-
+    # 5. Nuovo nome con timestamp
+    new_filename = f"{nome_safe}_{timestamp}{ext}"  # "A31 Perle_20251012_143520.jpg"
+    
+    # 6. Percorso finale
+    return os.path.join('file_catalogo', new_filename)  # "file_catalogo/A31 Perle_20251012_143520.jpg"
 
 class Catalogo(models.Model):
     #Campi per il nome in 4 lingue diverse
@@ -291,6 +287,141 @@ class Categoria(models.Model):
         # Unisci con " > "
         return " > ".join(path_parts)
     
+# Modello per gestire file del catalogo
+# Supporta upload diretto o selezione da Filer
+class CartelleCatalogo(models.Model):
 
-#class CartelleCatalogo(models.Model):
+    nome_cartella = models.CharField(
+        max_length=250,
+        verbose_name='Nome Cartella',
+        help_text='Es: A31 Perle in plastica, FS46 Materiali'
+    )
+
+    #nome cartella per ordinamento, non modificabile
+    nome_cartella_sort = models.CharField(
+        max_length=250,
+        editable=False,
+        blank=True,
+        verbose_name='Nome Cartella Sort'
+    )
+
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.PROTECT,
+        related_name='cartelle',
+        verbose_name='Categoria'
+    )
+
+    # Upload Diretto
+    file_upload_diretto = models.FileField(
+        upload_to=cartella_upload_path, #usa la funziona create per salvare il file con timestamp
+        null=True,
+        blank=True,
+        verbose_name='Upload Diretto',
+        help_text='Per aggiornamenti veloci: carica file direttamente qui'
+    )
     
+    # Selezione file per Cartella da Filer
+    file_da_filer = FilerFileField(
+        null=True,
+        blank=True,
+        related_name="cartelle_catalogo",
+        on_delete=models.CASCADE,
+        verbose_name='Seleziona da Media Manager',
+        help_text='Per upload massivi: prima carica su Filer, poi seleziona qui'
+    )
+
+    #campo che rivela il tipo di file nel momento in cui salvi
+    tipo_file = models.CharField(
+        max_length=10,
+        editable=False,
+        blank=True,
+        verbose_name='Tipo File'
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='Attivo'
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data Creazione'
+    )
+    
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Ultima Modifica'
+    )
+
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cartelle_create',
+        verbose_name='Creato da'
+    )
+    
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cartelle_modificate',
+        verbose_name='Modificato da'
+    )
+
+    class Meta:
+        verbose_name = 'Cartella Catalogo'
+        verbose_name_plural = 'Cartelle Catalogo'
+        ordering = ['categoria__catalogo', 'categoria', 'nome_cartella_sort']
+
+    # stampa il percorso completo della cartella   
+    def __str__(self):
+        return f"{self.categoria.catalogo.nome_it} > {self.categoria.nome_it} > {self.nome_cartella}"   
+    
+    #Metodo che ritorna il file effettivo, che sia upload diretto o da filer
+    def get_file(self):
+        return self.file_upload_diretto or (self.file_da_filer.file if self.file_da_filer else None)
+    
+    #Metodo che ritorna il nome del file effettivo
+    def get_filename(self):
+        file = self.get_file()
+        return os.path.basename(file.name) if file else 'Nessun file'
+    
+    #Metodo che ritorna l'estensione del file effettivo
+    def get_file_extension(self):
+        file = self.get_file()
+        return os.path.splitext(file.name)[1].lower() if file else ''
+    
+    #Metodo che ritorna il tipo di file in base all'estensione
+    def get_file_type(self):
+        ext = self.get_file_extension()
+        if ext in ['.pdf']:
+            return 'PDF'
+        elif ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']:
+            return 'Immagine'
+        elif ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv']:
+            return 'Video'
+        elif ext in ['.doc', '.docx', '.odt']:
+            return 'Documento Word'
+        elif ext in ['.xls', '.xlsx', '.ods']:
+            return 'Foglio Excel'
+        elif ext in ['.ppt', '.pptx', '.odp']:
+            return 'Presentazione PowerPoint'
+        else:
+            return 'Altro'
+        
+    #Metodo che ordina le cartelle in base al nome cartella sort e all'import re per paddare numeri
+    def save(self, *args, **kwargs):
+        # Genera nome_cartella_sort paddando numeri per ordinamento corretto
+        def pad_numbers(text):
+            return re.sub(r'(\d+)', lambda m: m.group(1).zfill(10), text)
+        
+        self.nome_cartella_sort = pad_numbers(self.nome_cartella.lower())
+        
+        # Determina tipo_file
+        self.tipo_file = self.get_file_type()
+        
+        super().save(*args, **kwargs)

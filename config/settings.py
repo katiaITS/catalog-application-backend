@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -144,3 +145,17 @@ THUMBNAIL_PROCESSORS = (
     'filer.thumbnail_processors.scale_and_crop_with_subject_location',
     'easy_thumbnails.processors.filters',
 )
+
+# Organizzazione file Filer per data (Anno/Mese/Giorno)
+FILER_STORAGES = {
+    'public': {
+        'main': {
+            'ENGINE': 'filer.storage.PublicFileSystemStorage',
+            'OPTIONS': {
+                'location': os.path.join(MEDIA_ROOT, 'filer_public'),
+                'base_url': '/media/filer_public/',
+            },
+            'UPLOAD_TO': 'filer.utils.generate_filename.by_date',
+        },
+    },
+}
