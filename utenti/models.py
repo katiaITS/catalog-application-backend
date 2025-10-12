@@ -1,3 +1,4 @@
+#models admin
 from django.db import models
 from django.contrib.auth.models import User #Importa il modello User di Django
 #Import che ci permette di creare automaticamente un ProfileUtente quando viene creato un Utente
@@ -40,6 +41,3 @@ def salva_profilo_utente(sender, instance, **kwargs):
         instance.profiloutente.save()
     except Exception as e:
         print(f"Errore durante il salvataggio del profilo: {e}")
-
-
-# Create your models here.

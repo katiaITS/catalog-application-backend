@@ -37,8 +37,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # App di terze parti
+    'easy_thumbnails',  # Per thumbnail automatici
+    'filer',            # Media manager
+    'mptt',             # Modified Preorder Tree Traversal (gestione strutture ad albero) server per filer
+    
+    # App
     'catalogo',
     'utenti',
+
 ]
 
 MIDDLEWARE = [
@@ -118,7 +125,22 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Media files (User uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Filer Settings
+FILER_ENABLE_PERMISSIONS = True  # Permessi su file/cartelle
+FILER_CANONICAL_URL = 'filer/'   # URL base Filer nell'admin
+THUMBNAIL_HIGH_RESOLUTION = True  # Thumbnail alta qualità
+THUMBNAIL_PROCESSORS = (
+    'easy_thumbnails.processors.colorspace',
+    'easy_thumbnails.processors.autocrop',
+    'filer.thumbnail_processors.scale_and_crop_with_subject_location',
+    'easy_thumbnails.processors.filters',
+)

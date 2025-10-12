@@ -1,6 +1,40 @@
 from django.db import models
 from django.contrib.auth.models import User #serve per sapere chi ha caricato cosa
 from django.utils.text import slugify
+import re #serve per manipolare i pattern di testo -> nel nostro caso per la funzionare che padda i numeri
+from pathlib import Path #manipola nomi file e percorsi (estraiamo il nome file senza estensione)
+import os # gestione file sul SO lousiamo per rinominare i file con timestamp
+from django.utils import timezone #per generare timestamp sui nomi file
+
+#metodo che genera il percordo dove salvare il file caricato
+#Struttura: Struttura: cataloghi/{slug_catalogo}/{filename_timestamp}
+#Esempio: cataloghi/componenti-a1-a114/A31 Perle_20251012_143520.jpg
+
+def cartella_upload_path(instance, filename): #instance oggetto che stai salvando, filename il nome del file originale
+    # Estrai nome cartella dal filename (senza estensione)
+    nome_cartella= Path(filename).stem #stem prende solo il nome del filename senza estensione
+    
+    #Creo il timestamp
+    timestamp=timezone.now().strftime('%Y%m%d_%H%M%S') 
+    
+    #Separa il nome dall'estensione e prende quest'ultima
+    ext = os.path.splitext(filename)[1] 
+    
+    #Rimuove caratteri problematici per il filesystem
+    nome_safe = re.sub(r'[^\w\s-]', '', nome_cartella) 
+    
+    #Combina nome, timestamp e estensione
+    new_filename = f"{nome_safe}_{timestamp}{ext}" 
+
+    # Risali al catalogo tramite categoria
+    if instance.categoria and instance.categoria.catalogo:
+        catalogo_slug = instance.categoria.catalogo.slug
+    else:
+        catalogo_slug = 'senza-catalogo'
+    
+    # Ritorna percorso: cataloghi/{catalogo_slug}/{filename}
+    return os.path.join('cataloghi', catalogo_slug, new_filename)
+
 
 class Catalogo(models.Model):
     #Campi per il nome in 4 lingue diverse
@@ -256,3 +290,7 @@ class Categoria(models.Model):
         
         # Unisci con " > "
         return " > ".join(path_parts)
+    
+
+#class CartelleCatalogo(models.Model):
+    
