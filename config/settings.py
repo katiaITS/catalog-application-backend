@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'easy_thumbnails',  # Per thumbnail automatici
     'filer',            # Media manager
     'mptt',             # Modified Preorder Tree Traversal (gestione strutture ad albero) server per filer
-    
+    'rest_framework',  # API REST
+
     # App
     'catalogo',
     'utenti',
@@ -158,4 +159,22 @@ FILER_STORAGES = {
             'UPLOAD_TO': 'filer.utils.generate_filename.by_date',
         },
     },
+}
+
+# Django REST Framework Configuration
+REST_FRAMEWORK = {
+    # Paginazione di default
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    
+    # Permessi di default (per ora tutti possono accedere)
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
+    
+    # Renderer (formato risposta)
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',  # API navigabile dal browser
+    ],
 }
