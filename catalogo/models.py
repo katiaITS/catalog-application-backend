@@ -293,6 +293,7 @@ class CartelleCatalogo(models.Model):
 
     nome_cartella = models.CharField(
         max_length=250,
+        blank=True,
         verbose_name='Nome Cartella',
         help_text='Es: A31 Perle in plastica, FS46 Materiali'
     )
@@ -383,8 +384,12 @@ class CartelleCatalogo(models.Model):
     
     #Metodo che ritorna il file effettivo, che sia upload diretto o da filer
     def get_file(self):
-        return self.file_upload_diretto or (self.file_da_filer.file if self.file_da_filer else None)
-    
+        if self.file_upload_diretto:
+            return self.file_upload_diretto
+        elif self.file_da_filer:
+            return self.file_da_filer.file
+        return None
+
     #Metodo che ritorna il nome del file effettivo
     def get_filename(self):
         file = self.get_file()
@@ -415,11 +420,20 @@ class CartelleCatalogo(models.Model):
         
     #Metodo che ordina le cartelle in base al nome cartella sort e all'import re per paddare numeri
     def save(self, *args, **kwargs):
-        # Genera nome_cartella_sort paddando numeri per ordinamento corretto
-        def pad_numbers(text):
-            return re.sub(r'(\d+)', lambda m: m.group(1).zfill(10), text)
+        # Auto-popola nome_cartella se vuoto
+        if not self.nome_cartella:
+            # Accedi direttamente ai campi invece di usare get_file()
+            if self.file_upload_diretto:
+                self.nome_cartella = Path(self.file_upload_diretto.name).stem
+            elif self.file_da_filer and self.file_da_filer.file:
+                self.nome_cartella = Path(self.file_da_filer.file.name).stem
         
-        self.nome_cartella_sort = pad_numbers(self.nome_cartella.lower())
+        # Genera nome_cartella_sort paddando numeri
+        if self.nome_cartella:  # Solo se nome_cartella esiste
+            def pad_numbers(text):
+                return re.sub(r'(\d+)', lambda m: m.group(1).zfill(10), text)
+            
+            self.nome_cartella_sort = pad_numbers(self.nome_cartella.lower())
         
         # Determina tipo_file
         self.tipo_file = self.get_file_type()

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Catalogo, Categoria
+from .models import Catalogo, Categoria, CartelleCatalogo
 
 #creaimo una classe admin personalizzata che configura l'admin per il modello catalogo
 #Registra Catalogo nell'admin
@@ -75,3 +75,78 @@ class CategoriaAdmin(admin.ModelAdmin):
     def parent_nome(self, obj):
         return obj.parent.nome_it if obj.parent else '-'
     parent_nome.short_description = 'Categoria Padre'      
+
+
+from django import forms
+from filer.models import File
+
+# Form Custom con selezione multipla
+class CartelleCatalogoForm(forms.ModelForm):
+    # Campo per selezione multipla file da Filer
+    files_da_filer = forms.ModelMultipleChoiceField(
+        queryset=File.objects.all(),
+        required=False,
+        widget=admin.widgets.FilteredSelectMultiple('Files', False),
+        label='Seleziona File da Filer (Multipli)',
+        help_text='Seleziona più file per creare multiple cartelle contemporaneamente'
+    )
+    
+    class Meta:
+        model = CartelleCatalogo
+        fields = '__all__'
+
+@admin.register(CartelleCatalogo)
+class CartelleCatalogoAdmin(admin.ModelAdmin):
+    form = CartelleCatalogoForm  # ← USA FORM CUSTOM
+    
+    list_display = ('nome_cartella', 'categoria', 'tipo_file', 'is_active', 'created_at', 'updated_by')
+    list_display_links = ('nome_cartella',)
+    list_filter = ('tipo_file', 'is_active', 'categoria__catalogo')
+    search_fields = ('nome_cartella',)
+    
+    def save_model(self, request, obj, form, change):
+        # Se è modifica
+        if change:
+            obj.updated_by = request.user
+            super().save_model(request, obj, form, change)
+        else:
+            # È creazione nuova
+            files_multipli = form.cleaned_data.get('files_da_filer')
+            
+            if files_multipli and files_multipli.count() > 0:
+                # CREAZIONE MULTIPLA
+                categoria = form.cleaned_data['categoria']
+                is_active = form.cleaned_data.get('is_active', True)
+                count = 0
+                
+                for file_obj in files_multipli:
+                    from pathlib import Path
+                    nome = Path(file_obj.name).stem
+                    
+                    CartelleCatalogo.objects.create(
+                        nome_cartella=nome,
+                        categoria=categoria,
+                        file_da_filer=file_obj,
+                        is_active=is_active,
+                        created_by=request.user,
+                        updated_by=request.user
+                    )
+                    count += 1
+                
+                self.message_user(
+                    request,
+                    f'Create {count} CartelleCatalogo con successo!'
+                )
+            else:
+                # CREAZIONE SINGOLA
+                obj.created_by = request.user
+                obj.updated_by = request.user
+                super().save_model(request, obj, form, change)
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        # Redirect alla lista dopo creazione multipla
+        if 'files_da_filer' in request.POST:
+            from django.http import HttpResponseRedirect
+            from django.urls import reverse
+            return HttpResponseRedirect(reverse('admin:catalogo_cartellecatalogo_changelist'))
+        return super().response_add(request, obj, post_url_continue)
