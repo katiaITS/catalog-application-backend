@@ -113,6 +113,15 @@ class Catalogo(models.Model):
         verbose_name='Modificato da'
     )
 
+    # Relazione ManyToMany con Cartelle tramite tabella intermedia CatalogoCartella
+    cartelle_root = models.ManyToManyField(
+        'Cartelle',
+        through='CatalogoCartella', #Usa la tabella ponte
+        related_name='cataloghi',
+        verbose_name='File Root',
+        blank=True
+    )
+
     #Per i nomi nell'admin e per l'ordinamento alfabetico
     class Meta:
         verbose_name = 'Catalogo'
@@ -182,14 +191,6 @@ class Categoria(models.Model):
     verbose_name='Attivo'
     )
 
-    #realzione con modello Catalogo
-    catalogo = models.ForeignKey(
-    Catalogo,
-    on_delete=models.PROTECT,
-    related_name='categorie',
-    verbose_name='Catalogo'
-    )
-
     #
     parent = models.ForeignKey(
     'self',
@@ -228,10 +229,26 @@ class Categoria(models.Model):
         verbose_name='Ultima Modifica'
     )
 
+    catalogo = models.ForeignKey(
+        Catalogo,
+        on_delete=models.PROTECT,
+        related_name='categorie',
+        verbose_name='Catalogo'
+    )
+
+    # Relazione ManyToMany con Catalogo tramite tabella intermedia CatalogoCartella
+    cartelle = models.ManyToManyField(
+        'Cartelle',
+        through='CategoriaCartella',
+        related_name='categorie',
+        verbose_name='File Categorizzati',
+        blank=True
+    )
+
     class Meta:
         verbose_name = 'Categoria'
         verbose_name_plural = 'Categorie'
-        ordering = ['catalogo', 'nome_it']
+        ordering = ['catalogo__nome_it', 'nome_it']
 
     #Mostra il percorso completo della categoria
     def __str__(self):
@@ -287,9 +304,9 @@ class Categoria(models.Model):
         # Unisci con " > "
         return " > ".join(path_parts)
     
-# Modello per gestire file del catalogo
-# Supporta upload diretto o selezione da Filer
-class CartelleCatalogo(models.Model):
+# Modello per gestire file del catalogo -> Supporta upload diretto o selezione da Filer
+class Cartelle(models.Model):
+
 
     nome_cartella = models.CharField(
         max_length=250,
@@ -304,13 +321,6 @@ class CartelleCatalogo(models.Model):
         editable=False,
         blank=True,
         verbose_name='Nome Cartella Sort'
-    )
-
-    categoria = models.ForeignKey(
-        Categoria,
-        on_delete=models.PROTECT,
-        related_name='cartelle',
-        verbose_name='Categoria'
     )
 
     # Upload Diretto
@@ -376,7 +386,7 @@ class CartelleCatalogo(models.Model):
     class Meta:
         verbose_name = 'Cartella Catalogo'
         verbose_name_plural = 'Cartelle Catalogo'
-        ordering = ['categoria__catalogo', 'categoria', 'nome_cartella_sort']
+        ordering = [ 'nome_cartella_sort']
 
     # stampa il percorso completo della cartella   
     def __str__(self):
@@ -439,3 +449,69 @@ class CartelleCatalogo(models.Model):
         self.tipo_file = self.get_file_type()
         
         super().save(*args, **kwargs)
+
+# Ponte tra Catalogo e Cartelle (nuova tabella DB per relazione molti a molti)
+class CatalogoCartella(models.Model):
+    catalogo = models.ForeignKey(
+        Catalogo,
+        on_delete=models.CASCADE,
+        related_name='cartelle_root_associate',
+        verbose_name='Catalogo'
+    )
+    cartella = models.ForeignKey(
+        Cartelle,
+        on_delete=models.CASCADE,
+        related_name='cataloghi_root',
+        verbose_name='Cartella'
+    )
+
+    #campo per ordinare le cartelle all'interno del catalogo
+    ordine = models.IntegerField(
+        default=0,
+        verbose_name='Ordine'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Catalogo-Cartella'
+        verbose_name_plural = 'Catalogo-Cartelle'
+        unique_together = [['catalogo', 'cartella']] #impedisce duplicati della stessa associazione
+        ordering = ['catalogo', 'ordine']
+    
+    #Mostra il collegamento tra catalogo e cartella
+    def __str__(self):
+        return f"{self.catalogo.nome_it} → {self.cartella.nome_cartella}"
+
+# Ponte tra Categoria e Cartelle (nuova tabella DB per relazione molti a molti)   
+class CategoriaCartella(models.Model):
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.CASCADE,
+        related_name='cartelle_associate',
+        verbose_name='Categoria'
+    )
+    cartella = models.ForeignKey(
+        Cartelle,
+        on_delete=models.CASCADE,
+        related_name='categorie_associate',
+        verbose_name='Cartella'
+    )
+
+    #campo per ordinare le cartelle all'interno della categoria
+    ordine = models.IntegerField(
+        default=0,
+        verbose_name='Ordine'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Categoria-Cartella'
+        verbose_name_plural = 'Categoria-Cartelle'
+        unique_together = [['categoria', 'cartella']]
+        ordering = ['categoria', 'ordine']
+    
+    #Mostra il collegamento tra categoria e cartella
+    def __str__(self):
+        return f"{self.categoria.nome_it} → {self.cartella.nome_cartella}"

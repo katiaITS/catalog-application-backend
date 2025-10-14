@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Catalogo, Categoria, CartelleCatalogo
+from .models import Catalogo, Categoria, Cartelle
 
 #creaimo una classe admin personalizzata che configura l'admin per il modello catalogo
 #Registra Catalogo nell'admin
@@ -81,7 +81,7 @@ from django import forms
 from filer.models import File
 
 # Form Custom con selezione multipla
-class CartelleCatalogoForm(forms.ModelForm):
+class CartelleForm(forms.ModelForm):
     # Campo per selezione multipla file da Filer
     files_da_filer = forms.ModelMultipleChoiceField(
         queryset=File.objects.all(),
@@ -92,16 +92,16 @@ class CartelleCatalogoForm(forms.ModelForm):
     )
     
     class Meta:
-        model = CartelleCatalogo
+        model = Cartelle
         fields = '__all__'
 
-@admin.register(CartelleCatalogo)
-class CartelleCatalogoAdmin(admin.ModelAdmin):
-    form = CartelleCatalogoForm  # ← USA FORM CUSTOM
+@admin.register(Cartelle)
+class CartelleAdmin(admin.ModelAdmin):
+    form = CartelleForm  # ← USA FORM CUSTOM
     
-    list_display = ('nome_cartella', 'categoria', 'tipo_file', 'is_active', 'created_at', 'updated_by')
+    list_display = ('nome_cartella', 'tipo_file', 'is_active', 'created_at', 'updated_by')
     list_display_links = ('nome_cartella',)
-    list_filter = ('tipo_file', 'is_active', 'categoria__catalogo')
+    list_filter = ('tipo_file', 'is_active',)
     search_fields = ('nome_cartella',)
     
     def save_model(self, request, obj, form, change):
@@ -123,7 +123,7 @@ class CartelleCatalogoAdmin(admin.ModelAdmin):
                     from pathlib import Path
                     nome = Path(file_obj.name).stem
                     
-                    CartelleCatalogo.objects.create(
+                    Cartelle.objects.create(
                         nome_cartella=nome,
                         categoria=categoria,
                         file_da_filer=file_obj,

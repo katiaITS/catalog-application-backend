@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Catalogo, Categoria, CartelleCatalogo
+from .models import Catalogo, Categoria, Cartelle
 
 # Serializer per il modello Catalogo genera automaticamente i campi basandosi sul modello
 class CatalogoSerializer(serializers.ModelSerializer):
@@ -61,7 +61,7 @@ class CartelleCatalogoSerializer(serializers.ModelSerializer):
     file_nome = serializers.SerializerMethodField()
 
     class Meta:
-        model = CartelleCatalogo
+        model = Cartelle
         fields = [
             'id',
             'nome_cartella',

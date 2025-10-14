@@ -1,7 +1,7 @@
 from rest_framework import viewsets #importa classe base ViewSet
 from rest_framework.permissions import IsAuthenticated #Permesso che richiede autenticazione
 
-from .models import Catalogo, Categoria, CartelleCatalogo
+from .models import Catalogo, Categoria, Cartelle
 from .serializers import CatalogoSerializer, CategoriaSerializer, CartelleCatalogoSerializer
 
 class CatalogoViewSet(viewsets.ModelViewSet): #ViewSet per gestire operazioni CRUD su Catalogo
@@ -52,6 +52,6 @@ class CartelleCatalogoViewSet(viewsets.ModelViewSet):
         Anche qui incluse ottimizzazioni per ridurre query.
         """
         #Fa una sola query ottimizzata per recuperare categoria e catalogo associati
-        queryset = CartelleCatalogo.objects.select_related('categoria', 'categoria__catalogo').all() #categoria__catalogo -> attravero categoria prendi catalogo
+        queryset = Cartelle.objects.select_related('categoria', 'categoria__catalogo').all() #categoria__catalogo -> attravero categoria prendi catalogo
         serializer_class = CartelleCatalogoSerializer
         permission_classes = [IsAuthenticated]
