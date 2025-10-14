@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'filer',            # Media manager
     'mptt',             # Modified Preorder Tree Traversal (gestione strutture ad albero) server per filer
     'rest_framework',  # API REST
+    'rest_framework_simplejwt',  # JWT Auth per DRF
+    'rest_framework_simplejwt.token_blacklist',  # Per invalidare token JWT e crea tabelle DB per tracciare toker revocati
 
     # App
     'catalogo',
@@ -163,18 +165,50 @@ FILER_STORAGES = {
 
 # Django REST Framework Configuration
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [ #Ordine importante prima JWT poi session
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT -> cerca tocken JWT nell'header Authorization
+        'rest_framework.authentication.SessionAuthentication',        # Session (per admin) -> cerca session cookie
+    ],
+    
+    # Di deafult tute le API richiedono login -> Senza non si può accedere
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # Default: richiede login
+    ],
+
     # Paginazione di default
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
-    
-    # Permessi di default (per ora tutti possono accedere)
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
-    ],
-    
-    # Renderer (formato risposta)
+
+    # Renderer (formato risposta) - Diversi per sviluppo e produzione
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # API navigabile dal browser
+        'rest_framework.renderers.BrowsableAPIRenderer',  # API navigabile dal browser -> Solo in sviluppo
+    ] if os.environ.get('DEBUG', 'True') == 'True' else [
+        'rest_framework.renderers.JSONRenderer',  # Solo JSON in produzione
     ],
+}
+
+# Configurazione Simple JWT
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # Access token dura 1 ora
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Refresh token dura 7 giorni
+    'ROTATE_REFRESH_TOKENS': True, # Genera nuovo refresh ad ogni refresh
+    'BLACKLIST_AFTER_ROTATION': True, # Invalida vecchio refresh token
+    'UPDATE_LAST_LOGIN': True, # Aggiorna last_login in User model
+    
+    'ALGORITHM': 'HS256', # Algoritmo crittografia
+    'SIGNING_KEY': SECRET_KEY, # Usa SECRET_KEY Django
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    
+    'AUTH_HEADER_TYPES': ('Bearer',), # Header: "Authorization: Bearer {token}"
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
 }
