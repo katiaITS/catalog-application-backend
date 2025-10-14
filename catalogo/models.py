@@ -384,14 +384,13 @@ class Cartelle(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Cartella Catalogo'
-        verbose_name_plural = 'Cartelle Catalogo'
+        verbose_name = 'Cartella'
+        verbose_name_plural = 'Cartelle'
         ordering = [ 'nome_cartella_sort']
 
     # stampa il percorso completo della cartella   
     def __str__(self):
-        return f"{self.categoria.catalogo.nome_it} > {self.categoria.nome_it} > {self.nome_cartella}"   
-    
+        return self.nome_cartella
     #Metodo che ritorna il file effettivo, che sia upload diretto o da filer
     def get_file(self):
         if self.file_upload_diretto:
