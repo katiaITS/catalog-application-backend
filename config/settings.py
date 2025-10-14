@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',  # API REST
     'rest_framework_simplejwt',  # JWT Auth per DRF
     'rest_framework_simplejwt.token_blacklist',  # Per invalidare token JWT e crea tabelle DB per tracciare toker revocati
-
+    'corsheaders',      # Gestione CORS
     # App
     'catalogo',
     'utenti',
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -212,3 +213,45 @@ SIMPLE_JWT = {
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
+
+# CORS Configuration
+import os
+
+# Sviluppo: permetti tutti i domini (comodo per testing)
+# Produzione: solo domini specifici (sicuro)
+if os.environ.get('DEBUG', 'True') == 'True':
+    # SVILUPPO - Permissivo
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # PRODUZIONE - Restrittivo solo i domini specificati
+    # Ogni nuovo dominio va aggiunto qui o le richieste saranno bloccate
+    CORS_ALLOWED_ORIGINS = [
+        'https://tuofrontend.com',      # Frontend produzione
+        'https://www.tuofrontend.com',  # Frontend produzione (www)
+    ]
+
+#Permetti credenziali (cookie, auth headers)
+CORS_ALLOW_CREDENTIALS = True
+
+# Metodi HTTP permessi
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Header permessi nelle richieste
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
