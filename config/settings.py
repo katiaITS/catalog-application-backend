@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +22,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xvv=8f!ic4uez2m0wm*5g#a(m98m6zut1s#^grd=a1_h9y)xzf'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 
 # Application definition
@@ -193,8 +194,8 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # Access token dura 1 ora
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Refresh token dura 7 giorni
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_MINUTES', default=60, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('JWT_REFRESH_TOKEN_DAYS', default=7, cast=int)),
     'ROTATE_REFRESH_TOKENS': True, # Genera nuovo refresh ad ogni refresh
     'BLACKLIST_AFTER_ROTATION': True, # Invalida vecchio refresh token
     'UPDATE_LAST_LOGIN': True, # Aggiorna last_login in User model
@@ -215,20 +216,17 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-import os
-
 # Sviluppo: permetti tutti i domini (comodo per testing)
 # Produzione: solo domini specifici (sicuro)
-if os.environ.get('DEBUG', 'True') == 'True':
-    # SVILUPPO - Permissivo
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    # PRODUZIONE - Restrittivo solo i domini specificati
-    # Ogni nuovo dominio va aggiunto qui o le richieste saranno bloccate
-    CORS_ALLOWED_ORIGINS = [
-        'https://tuofrontend.com',      # Frontend produzione
-        'https://www.tuofrontend.com',  # Frontend produzione (www)
-    ]
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+
+# Se CORS_ALLOW_ALL_ORIGINS è False, usa questa lista
+if not CORS_ALLOW_ALL_ORIGINS:
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
+        default='',
+        cast=Csv()
+    )
 
 #Permetti credenziali (cookie, auth headers)
 CORS_ALLOW_CREDENTIALS = True

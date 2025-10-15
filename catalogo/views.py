@@ -49,9 +49,13 @@ class CartelleCatalogoViewSet(viewsets.ModelViewSet):
         - DELETE /api/cartelle/{id}/  → Elimina cartella
 
         Include filtro per categoria e tipo_file. 
-        Anche qui incluse ottimizzazioni per ridurre query.
+        Ottimizzazione: prefetch delle relazioni many-to-many.
         """
-        #Fa una sola query ottimizzata per recuperare categoria e catalogo associati
-        queryset = Cartelle.objects.select_related('categoria', 'categoria__catalogo').all() #categoria__catalogo -> attravero categoria prendi catalogo
+        # Ottimizza query prefetchando le relazioni ManyToMany con cataloghi e categorie
+        queryset = Cartelle.objects.prefetch_related(
+            'cataloghi',      # Relazione M2M con Catalogo
+            'categorie',      # Relazione M2M con Categoria
+            'categorie__catalogo'  # Catalogo associato alle categorie
+        ).all()
         serializer_class = CartelleCatalogoSerializer
         permission_classes = [IsAuthenticated]

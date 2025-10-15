@@ -53,10 +53,9 @@ class CategoriaSerializer(serializers.ModelSerializer):
 
 # Serializer per il modello CartelleCatalogo genera automaticamente i campi basandosi sul modello
 class CartelleCatalogoSerializer(serializers.ModelSerializer):
-    # Include URL file e info categoria
-
-    categoria_nome = serializers.CharField(source='categoria.nome_it', read_only=True)
-    catalogo_nome = serializers.CharField(source='categoria.catalogo.nome_it', read_only=True)
+    # Include URL file e info relazioni many-to-many
+    cataloghi_list = serializers.SerializerMethodField()
+    categorie_list = serializers.SerializerMethodField()
     file_url = serializers.SerializerMethodField()
     file_nome = serializers.SerializerMethodField()
 
@@ -65,9 +64,8 @@ class CartelleCatalogoSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'nome_cartella',
-            'categoria',
-            'categoria_nome',
-            'catalogo_nome',
+            'cataloghi_list',
+            'categorie_list',
             'file_url',
             'file_nome',
             'tipo_file',
@@ -75,7 +73,17 @@ class CartelleCatalogoSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'tipo_file', 'categoria_nome', 'catalogo_nome', 'file_url', 'file_nome']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'tipo_file', 'cataloghi_list', 'categorie_list', 'file_url', 'file_nome']
+    
+    # Metodo per ottenere lista cataloghi
+    def get_cataloghi_list(self, obj):
+        """Restituisce lista nomi cataloghi associati"""
+        return [catalogo.nome_it for catalogo in obj.cataloghi.all()]
+    
+    # Metodo per ottenere lista categorie
+    def get_categorie_list(self, obj):
+        """Restituisce lista nomi categorie associate"""
+        return [categoria.nome_it for categoria in obj.categorie.all()]
     
     # Metodi per campi calcolati
     def get_file_url(self, obj):
