@@ -391,6 +391,23 @@ class Cartelle(models.Model):
     # stampa il percorso completo della cartella   
     def __str__(self):
         return self.nome_cartella
+    
+    def clean(self):
+        """Validazione: obbliga un solo metodo di upload"""
+        from django.core.exceptions import ValidationError
+        
+        # Caso 1: Entrambi i campi compilati
+        if self.file_upload_diretto and self.file_da_filer:
+            raise ValidationError({
+                'file_upload_diretto': 'Puoi usare solo UN metodo di upload. Rimuovi questo campo se usi Filer.',
+                'file_da_filer': 'Puoi usare solo UN metodo di upload. Rimuovi questo campo se usi Upload Diretto.'
+            })
+        
+        # Caso 2: Nessuno dei due campi compilato
+        if not self.file_upload_diretto and not self.file_da_filer:
+            raise ValidationError(
+                'Devi fornire almeno un file. Usa Upload Diretto OPPURE seleziona da Filer.'
+            )
     #Metodo che ritorna il file effettivo, che sia upload diretto o da filer
     def get_file(self):
         if self.file_upload_diretto:
