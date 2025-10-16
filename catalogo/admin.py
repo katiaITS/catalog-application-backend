@@ -1,5 +1,50 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 from .models import Catalogo, Categoria, Cartelle, CatalogoCartella, CategoriaCartella
+
+# Filtro custom per Cataloghi
+class CatalogoFilter(SimpleListFilter):
+    title = 'catalogo'
+    parameter_name = 'catalogo'
+    
+    def lookups(self, request, model_admin):
+        cataloghi = Catalogo.objects.all().order_by('nome_it')
+        return [(c.id, c.nome_it) for c in cataloghi]
+    
+    def queryset(self, request, queryset):
+        if self.value():
+            from django.db.models import Q
+            # Filtra cartelle che sono:
+            # 1. Associate direttamente al catalogo (root)
+            # 2. Associate a categorie di quel catalogo (incluse sottocategorie)
+            return queryset.filter(
+                Q(cataloghi__id=self.value()) |  # Root del catalogo
+                Q(categorie__catalogo_id=self.value())  # Categorie del catalogo
+            ).distinct()
+        return queryset
+
+# Filtro custom per Categorie (dipendente dal Catalogo selezionato)
+class CategoriaFilter(SimpleListFilter):
+    title = 'categoria'
+    parameter_name = 'categoria'
+    
+    def lookups(self, request, model_admin):
+        # Prende il catalogo selezionato dal parametro URL
+        catalogo_id = request.GET.get('catalogo')
+        
+        if catalogo_id:
+            # Se c'è un catalogo selezionato, mostra solo le sue categorie
+            categorie = Categoria.objects.filter(catalogo_id=catalogo_id).order_by('nome_it')
+        else:
+            # Altrimenti mostra tutte le categorie
+            categorie = Categoria.objects.all().order_by('nome_it')
+        
+        return [(c.id, c.nome_it) for c in categorie]
+    
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(categorie__id=self.value()).distinct()
+        return queryset
 
 #creamo un inline admin per mostrare le cartelle associate a catalogo
 class CatalogoCartellaInline(admin.TabularInline):
@@ -135,12 +180,33 @@ class CartelleForm(forms.ModelForm):
 class CartelleAdmin(admin.ModelAdmin):
     form = CartelleForm  # ← USA FORM CUSTOM
     
-    list_display = ('nome_cartella', 'tipo_file', 'cataloghi_list', 'categorie_list', 'is_active', 'created_at', 'updated_by')
+    list_display = ('nome_cartella', 'tipo_file', 'posizione', 'is_active', 'created_at', 'updated_by')
     list_display_links = ('nome_cartella',)
-    list_filter = ('tipo_file', 'is_active',)
+    list_filter = ('tipo_file', 'is_active', CatalogoFilter, CategoriaFilter)
     search_fields = ('nome_cartella',)
     
     inlines = [CatalogoCartellaInlineInverso, CategoriaCartellaInlineInverso]
+    
+    # Colonna unica che mostra dove si trova la cartella
+    def posizione(self, obj):
+        posizioni = []
+        
+        # Controllo categorie
+        categorie = obj.categorie.all()
+        if categorie:
+            for cat in categorie:
+                posizioni.append(f"{cat.nome_it}")
+        
+        # Controllo cataloghi root
+        cataloghi = obj.cataloghi.all()
+        if cataloghi:
+            for cat in cataloghi:
+                posizioni.append(f"{cat.nome_it}")
+        
+        return " | ".join(posizioni) if posizioni else "Non assegnata"
+    
+    posizione.short_description = 'Posizione'
+    
     def save_model(self, request, obj, form, change):
         # Se è modifica
         if change:
