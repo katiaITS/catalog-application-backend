@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
+from django.db import models
 from .models import Catalogo, Categoria, Cartelle, CatalogoCartella, CategoriaCartella
 
 # Filtro custom per Cataloghi
@@ -160,17 +161,8 @@ class CategoriaAdmin(admin.ModelAdmin):
 from django import forms
 from filer.models import File
 
-# Form Custom con selezione multipla
+# Form Custom per Cartelle (semplice, senza multipli)
 class CartelleForm(forms.ModelForm):
-    # Campo per selezione multipla file da Filer
-    files_da_filer = forms.ModelMultipleChoiceField(
-        queryset=File.objects.all(),
-        required=False,
-        widget=admin.widgets.FilteredSelectMultiple('Files', False),
-        label='Seleziona File da Filer (Multipli)',
-        help_text='Seleziona più file per creare multiple cartelle contemporaneamente'
-    )
-    
     class Meta:
         model = Cartelle
         fields = '__all__'
@@ -178,14 +170,128 @@ class CartelleForm(forms.ModelForm):
 
 @admin.register(Cartelle)
 class CartelleAdmin(admin.ModelAdmin):
-    form = CartelleForm  # ← USA FORM CUSTOM
+    form = CartelleForm
     
     list_display = ('nome_cartella', 'tipo_file', 'posizione', 'is_active', 'created_at', 'updated_by')
     list_display_links = ('nome_cartella',)
     list_filter = ('tipo_file', 'is_active', CatalogoFilter, CategoriaFilter)
     search_fields = ('nome_cartella',)
     
+    # Fieldsets per organizzare il form
+    fieldsets = (
+        ('Informazioni Base', {
+            'fields': ('nome_cartella', 'is_active')
+        }),
+        ('Upload File (scegli UN metodo)', {
+            'fields': ('file_upload_diretto', 'file_da_filer'),
+            'description': 'Carica un file diretto OPPURE seleziona da Filer. Non entrambi!'
+        }),
+    )
+    
     inlines = [CatalogoCartellaInlineInverso, CategoriaCartellaInlineInverso]
+    
+    # URL Custom per import multiplo
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom_urls = [
+            path('import-multipli/', 
+                 self.admin_site.admin_view(self.import_multipli_view),
+                 name='catalogo_cartelle_import_multipli'),
+        ]
+        return custom_urls + urls
+    
+    def changelist_view(self, request, extra_context=None):
+        """Override per aggiungere pulsante custom nella toolbar"""
+        extra_context = extra_context or {}
+        extra_context['show_import_button'] = True
+        return super().changelist_view(request, extra_context)
+    
+    def import_multipli_view(self, request):
+        """
+        View custom per import multiplo da Filer
+        """
+        from django.shortcuts import render, redirect
+        from django.contrib import messages
+        from filer.models import File
+        import json
+        
+        if request.method == 'POST':
+            # L'utente ha confermato l'import
+            file_ids = request.POST.getlist('file_ids')
+            catalogo_id = request.POST.get('catalogo_id')
+            categoria_id = request.POST.get('categoria_id')
+            
+            if not catalogo_id:
+                messages.error(request, '❌ Devi selezionare un Catalogo!')
+                return redirect('admin:catalogo_cartelle_changelist')
+            
+            if file_ids:
+                count = 0
+                for file_id in file_ids:
+                    try:
+                        file_obj = File.objects.get(pk=file_id)
+                        from pathlib import Path
+                        nome = Path(file_obj.name).stem
+                        
+                        # Crea la cartella
+                        cartella = Cartelle.objects.create(
+                            nome_cartella=nome,
+                            file_da_filer=file_obj,
+                            is_active=True,
+                            created_by=request.user,
+                            updated_by=request.user
+                        )
+                        
+                        # Collega a Catalogo
+                        CatalogoCartella.objects.create(
+                            catalogo_id=catalogo_id,
+                            cartella=cartella,
+                            ordine=count
+                        )
+                        
+                        # Collega a Categoria se selezionata
+                        if categoria_id:
+                            CategoriaCartella.objects.create(
+                                categoria_id=categoria_id,
+                                cartella=cartella,
+                                ordine=count
+                            )
+                        
+                        count += 1
+                    except Exception as e:
+                        messages.error(request, f'❌ Errore con file {file_id}: {str(e)}')
+                
+                messages.success(request, f'✅ {count} file importati con successo!')
+            else:
+                messages.warning(request, '⚠️ Nessun file selezionato!')
+            
+            return redirect('admin:catalogo_cartelle_changelist')
+        
+        # Mostra la pagina intermedia con la lista file
+        files = File.objects.select_related('folder').all().order_by('-uploaded_at')
+        cataloghi = Catalogo.objects.filter(is_active=True)
+        
+        # Prepara categorie raggruppate per catalogo
+        categorie_by_catalogo = {}
+        for catalogo in cataloghi:
+            cats = Categoria.objects.filter(catalogo=catalogo, is_active=True)
+            categorie_by_catalogo[str(catalogo.id)] = [
+                {'id': cat.id, 'nome': cat.nome_it} for cat in cats
+            ]
+        
+        context = {
+            **self.admin_site.each_context(request),  # Contesto admin standard
+            'title': 'Importa Multipli File da Filer',
+            'files': files,
+            'cataloghi': cataloghi,
+            'categorie_json': json.dumps(categorie_by_catalogo),
+            'opts': self.model._meta,
+            'action_checkbox_name': admin.helpers.ACTION_CHECKBOX_NAME,
+        }
+        
+        # Django cerca il template: templates/admin/catalogo/import_multipli_action.html
+        return render(request, 'admin/catalogo/import_multipli_action.html', context)
     
     # Colonna unica che mostra dove si trova la cartella
     def posizione(self, obj):
@@ -208,51 +314,15 @@ class CartelleAdmin(admin.ModelAdmin):
     posizione.short_description = 'Posizione'
     
     def save_model(self, request, obj, form, change):
-        # Se è modifica
+        # Imposta chi ha creato/modificato
         if change:
             obj.updated_by = request.user
-            super().save_model(request, obj, form, change)
         else:
-            # È creazione nuova
-            files_multipli = form.cleaned_data.get('files_da_filer')
-            
-            if files_multipli and files_multipli.count() > 0:
-                # CREAZIONE MULTIPLA
-                categoria = form.cleaned_data['categoria']
-                is_active = form.cleaned_data.get('is_active', True)
-                count = 0
-                
-                for file_obj in files_multipli:
-                    from pathlib import Path
-                    nome = Path(file_obj.name).stem
-                    
-                    Cartelle.objects.create(
-                        nome_cartella=nome,
-                        categoria=categoria,
-                        file_da_filer=file_obj,
-                        is_active=is_active,
-                        created_by=request.user,
-                        updated_by=request.user
-                    )
-                    count += 1
-                
-                self.message_user(
-                    request,
-                    f'Create {count} CartelleCatalogo con successo!'
-                )
-            else:
-                # CREAZIONE SINGOLA
-                obj.created_by = request.user
-                obj.updated_by = request.user
-                super().save_model(request, obj, form, change)
-    
-    def response_add(self, request, obj, post_url_continue=None):
-        # Redirect alla lista dopo creazione multipla
-        if 'files_da_filer' in request.POST:
-            from django.http import HttpResponseRedirect
-            from django.urls import reverse
-            return HttpResponseRedirect(reverse('admin:catalogo_cartellecatalogo_changelist'))
-        return super().response_add(request, obj, post_url_continue)
+            obj.created_by = request.user
+            obj.updated_by = request.user
+        
+        # Salva normalmente
+        super().save_model(request, obj, form, change)
     
     # Mostra in quali cataloghi appare il file
     def cataloghi_list(self, obj):

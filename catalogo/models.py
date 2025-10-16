@@ -307,7 +307,6 @@ class Categoria(models.Model):
 # Modello per gestire file del catalogo -> Supporta upload diretto o selezione da Filer
 class Cartelle(models.Model):
 
-
     nome_cartella = models.CharField(
         max_length=250,
         blank=True,

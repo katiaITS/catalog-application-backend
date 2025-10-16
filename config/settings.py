@@ -33,6 +33,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv(
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',  # Admin theme
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -69,7 +70,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Aggiungi directory templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -253,3 +254,51 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Jazzmin Admin Theme Configuration
+JAZZMIN_SETTINGS = {
+    "site_title": "GIMA Admin",
+    "site_header": "GIMA Application",
+    "site_brand": "GIMA",
+    "welcome_sign": "Benvenuto nel pannello amministrativo GIMA",
+    
+    # Logo
+    "site_logo": None,  # Puoi aggiungere path al logo
+    
+    # Theme colori GIMA (verde)
+    "theme": "flatly",  # Bootstrap theme base
+    
+    # Colori custom
+    "custom_css": None,
+    "custom_js": None,
+    
+    # Sidebar
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    
+    # Top menu
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Sito", "url": "/", "new_window": True},
+    ],
+    
+    # Icone
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "catalogo.catalogo": "fas fa-folder",
+        "catalogo.categoria": "fas fa-list",
+        "catalogo.cartelle": "fas fa-file-alt",
+        "filer.folder": "fas fa-folder-open",
+    },
+    
+    # Colori tema (verde GIMA)
+    "custom_css": None,
+    "custom_js": None,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly",
+    "dark_mode_theme": None,
+}
