@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # JWT Auth per DRF
     'rest_framework_simplejwt.token_blacklist',  # Per invalidare token JWT e crea tabelle DB per tracciare toker revocati
     'corsheaders',      # Gestione CORS
+    'debug_toolbar',  # Debug toolbar
     # App
     'catalogo',
     'utenti',
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',  # Debug toolbar
     'corsheaders.middleware.CorsMiddleware',  # CORS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -63,6 +65,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+INTERNAL_IPS = [
+    '127.0.0.1',
 ]
 
 ROOT_URLCONF = 'config.urls'

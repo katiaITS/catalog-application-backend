@@ -51,8 +51,8 @@ class CategoriaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at', 'catalogo_nome', 'parent_nome']
 
-# Serializer per il modello CartelleCatalogo genera automaticamente i campi basandosi sul modello
-class CartelleCatalogoSerializer(serializers.ModelSerializer):
+# Serializer per il modello Cartelle genera automaticamente i campi basandosi sul modello
+class CartelleSerializer(serializers.ModelSerializer):
     # Include URL file e info relazioni many-to-many
     cataloghi_list = serializers.SerializerMethodField()
     categorie_list = serializers.SerializerMethodField()

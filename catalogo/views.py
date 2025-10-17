@@ -2,7 +2,7 @@ from rest_framework import viewsets #importa classe base ViewSet
 from rest_framework.permissions import IsAuthenticated #Permesso che richiede autenticazione
 
 from .models import Catalogo, Categoria, Cartelle
-from .serializers import CatalogoSerializer, CategoriaSerializer, CartelleCatalogoSerializer
+from .serializers import CatalogoSerializer, CategoriaSerializer, CartelleSerializer
 
 class CatalogoViewSet(viewsets.ModelViewSet): #ViewSet per gestire operazioni CRUD su Catalogo
      """
@@ -38,7 +38,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         serializer_class = CategoriaSerializer
         permission_classes = [IsAuthenticated]
 
-class CartelleCatalogoViewSet(viewsets.ModelViewSet):
+class CartelleViewSet(viewsets.ModelViewSet):
         """
         Endpoint generati:
         - GET    /api/cartelle/       → Lista tutte le cartelle
@@ -57,5 +57,5 @@ class CartelleCatalogoViewSet(viewsets.ModelViewSet):
             'categorie',      # Relazione M2M con Categoria
             'categorie__catalogo'  # Catalogo associato alle categorie
         ).all()
-        serializer_class = CartelleCatalogoSerializer
+        serializer_class = CartelleSerializer
         permission_classes = [IsAuthenticated]
