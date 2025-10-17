@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters', # Filtri per API REST
     # App di terze parti
     'easy_thumbnails',  # Per thumbnail automatici
     'filer',            # Media manager
@@ -195,6 +196,14 @@ REST_FRAMEWORK = {
     ] if os.environ.get('DEBUG', 'True') == 'True' else [
         'rest_framework.renderers.JSONRenderer',  # Solo JSON in produzione
     ],
+        
+    # Filtri e Ricerca
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend', # Filtri per API REST
+        'rest_framework.filters.SearchFilter', # Ricerca testuale
+        'rest_framework.filters.OrderingFilter', # Ordinamento 
+    ],
+    
 }
 
 # Configurazione Simple JWT

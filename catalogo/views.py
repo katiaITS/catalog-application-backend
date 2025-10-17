@@ -4,6 +4,10 @@ from rest_framework.permissions import IsAuthenticated #Permesso che richiede au
 from .models import Catalogo, Categoria, Cartelle
 from .serializers import CatalogoSerializer, CategoriaSerializer, CartelleSerializer
 
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from .filters import CatalogoFilter, CategoriaFilter
+
 class CatalogoViewSet(viewsets.ModelViewSet): #ViewSet per gestire operazioni CRUD su Catalogo
      """
      Endpoint generati:
@@ -18,6 +22,12 @@ class CatalogoViewSet(viewsets.ModelViewSet): #ViewSet per gestire operazioni CR
      queryset = Catalogo.objects.all() #Recupera tutti gli oggetti Catalogo
      serializer_class= CatalogoSerializer #Specifica il serializer da usare per convertire Model in JSON e viceversa
      permission_classes=[IsAuthenticated] #Solo utenti loggati possono accedere a queste API
+     # Filtri
+     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+     filterset_class = CatalogoFilter
+     search_fields = ['nome', 'descrizione']
+     ordering_fields = ['nome', 'created_at', 'is_active']
+     ordering = ['-created_at']  # Ordinamento default
 
 class CategoriaViewSet(viewsets.ModelViewSet):
         """
@@ -37,6 +47,10 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         queryset = Categoria.objects.select_related('catalogo', 'parent').all()
         serializer_class = CategoriaSerializer
         permission_classes = [IsAuthenticated]
+        filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+        filterset_class = CategoriaFilter
+        search_fields = ['nome']
+        ordering_fields = ['nome', 'ordine']
 
 class CartelleViewSet(viewsets.ModelViewSet):
         """
