@@ -1,8 +1,49 @@
-# 📚 GIMA Application Backend
+# Catalog Application - Backend
 
-Backend API per la gestione di cataloghi multilingua con Django REST Framework.
+**Backend API REST per la gestione di cataloghi di accessori moda.** 
 
-## 🚀 Quick Start
+Include un media manager per il caricamento file e supporto per traduzioni dei nomi catalogo.
+
+---
+
+## Funzionalità Principali
+
+### Gestione Cataloghi e Categorie
+- Operazioni CRUD complete (creazione, lettura, modifica, eliminazione)
+- Supporto traduzioni manuali per nomi (IT, EN, FR, ES)
+- Associazione di file alle categorie o ai cataloghi
+- Struttura gerarchica a categorie e sottocategorie
+
+### Gestione File e Media
+- Caricamento e eliminazione file tramite media manager integrato (Filer)
+- Spostamento file tra cartelle
+- Importazione massiva di file multipli
+- Ordinamento alfabetico intelligente (A1 < A2 < A10)
+
+### Gestione Utenti
+- Sistema di ruoli e permessi differenziati (Superuser, Staff, User)
+- Creazione e gestione account utenti
+- Controllo accessi basato su ruolo
+
+### Pannello Admin Personalizzato
+- Interfaccia moderna e responsive (Jazzmin Theme)
+- Inline editing per gestione rapida
+- Filtri avanzati per catalogo, categoria, tipo file
+
+---
+
+## Tecnologie
+
+- **Django 5.2.7** - Framework web Python
+- **Django REST Framework** - Gestione API REST
+- **djangorestframework-simplejwt** - Autenticazione tramite token JWT
+- **Django Filer 3.3.2** - Media manager avanzato
+- **Pillow** - Elaborazione immagini
+- **django-jazzmin** - Tema admin moderno
+
+---
+
+## Installazione
 
 ### 1. Clona il Repository
 ```bash
@@ -28,7 +69,10 @@ pip install -r requirements.txt
 
 ### 4. Configura Variabili d'Ambiente
 ```bash
-# Copia il template
+# Windows
+copy .env.example .env
+
+# Linux/Mac
 cp .env.example .env
 
 # Modifica .env con i tuoi valori
@@ -45,255 +89,29 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-### 7. Avvia Server
+### 7. Avvia Server di Sviluppo
 ```bash
 python manage.py runserver
 ```
 
-Il server sarà disponibile su: `http://localhost:8000`
+Il server sarà disponibile su: `http://localhost:8000`  
+Admin panel: `http://localhost:8000/admin/`
+
+## Risorse Utili
+
+### Documentazione Framework
+- [Django](https://docs.djangoproject.com/) - Framework principale
+- [Django REST Framework](https://www.django-rest-framework.org/) - API REST
+
+### Media & Autenticazione
+- [Django Filer](https://django-filer.readthedocs.io/) - Media manager
+- [Simple JWT](https://django-rest-framework-simplejwt.readthedocs.io/) - Autenticazione JWT
+
+### UI & Admin
+- [Django Jazzmin](https://django-jazzmin.readthedocs.io/) - Tema admin
 
 ---
 
-## 🔧 Configurazione
+## Autore
 
-### Variabili d'Ambiente (.env)
-
-| Variabile | Descrizione | Default | Obbligatorio |
-|-----------|-------------|---------|--------------|
-| `SECRET_KEY` | Chiave segreta Django | - | ✅ |
-| `DEBUG` | Modalità debug | `False` | ❌ |
-| `ALLOWED_HOSTS` | Host permessi | `localhost,127.0.0.1` | ❌ |
-| `CORS_ALLOW_ALL_ORIGINS` | Permetti tutti CORS | `False` | ❌ |
-| `CORS_ALLOWED_ORIGINS` | Domini CORS specifici | - | ❌ |
-| `JWT_ACCESS_TOKEN_MINUTES` | Durata access token (minuti) | `60` | ❌ |
-| `JWT_REFRESH_TOKEN_DAYS` | Durata refresh token (giorni) | `7` | ❌ |
-
-### Generare una Nuova SECRET_KEY
-
-```python
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
-
----
-
-## 📡 API Endpoints
-
-### Autenticazione (JWT)
-
-| Metodo | Endpoint | Descrizione |
-|--------|----------|-------------|
-| POST | `/api/auth/login/` | Ottieni token (access + refresh) |
-| POST | `/api/auth/refresh/` | Rinnova access token |
-| POST | `/api/auth/verify/` | Verifica validità token |
-
-**Esempio Login:**
-```bash
-curl -X POST http://localhost:8000/api/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "password"}'
-```
-
-**Risposta:**
-```json
-{
-  "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc..."
-}
-```
-
-### Cataloghi
-
-| Metodo | Endpoint | Descrizione | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/cataloghi/` | Lista cataloghi | ✅ |
-| POST | `/api/cataloghi/` | Crea catalogo | ✅ |
-| GET | `/api/cataloghi/{id}/` | Dettaglio catalogo | ✅ |
-| PUT | `/api/cataloghi/{id}/` | Modifica completa | ✅ |
-| PATCH | `/api/cataloghi/{id}/` | Modifica parziale | ✅ |
-| DELETE | `/api/cataloghi/{id}/` | Elimina catalogo | ✅ |
-
-### Categorie
-
-| Metodo | Endpoint | Descrizione | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/categorie/` | Lista categorie | ✅ |
-| POST | `/api/categorie/` | Crea categoria | ✅ |
-| GET | `/api/categorie/{id}/` | Dettaglio categoria | ✅ |
-| PUT | `/api/categorie/{id}/` | Modifica completa | ✅ |
-| PATCH | `/api/categorie/{id}/` | Modifica parziale | ✅ |
-| DELETE | `/api/categorie/{id}/` | Elimina categoria | ✅ |
-
-### Cartelle (Files)
-
-| Metodo | Endpoint | Descrizione | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/cartelle/` | Lista cartelle | ✅ |
-| POST | `/api/cartelle/` | Crea cartella | ✅ |
-| GET | `/api/cartelle/{id}/` | Dettaglio cartella | ✅ |
-| PUT | `/api/cartelle/{id}/` | Modifica completa | ✅ |
-| PATCH | `/api/cartelle/{id}/` | Modifica parziale | ✅ |
-| DELETE | `/api/cartelle/{id}/` | Elimina cartella | ✅ |
-
-**Usare il Token:**
-```bash
-curl -X GET http://localhost:8000/api/cataloghi/ \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
-```
-
----
-
-## 🗂️ Struttura Progetto
-
-```
-gima-application-backend/
-├── catalogo/              # App principale
-│   ├── models.py         # Modelli DB
-│   ├── serializers.py    # Serializer DRF
-│   ├── views.py          # ViewSets API
-│   ├── admin.py          # Configurazione admin
-│   └── urls.py           # URL routing
-├── utenti/               # App utenti
-│   ├── models.py         # ProfiloUtente
-│   └── admin.py
-├── config/               # Configurazione progetto
-│   ├── settings.py       # Settings Django
-│   ├── urls.py           # URL root
-│   └── wsgi.py
-├── media/                # File caricati
-├── templates/            # Template HTML
-├── .env                  # Variabili ambiente (NON committare!)
-├── .env.example          # Template variabili
-├── requirements.txt      # Dipendenze Python
-├── manage.py            # CLI Django
-└── db.sqlite3           # Database SQLite
-```
-
----
-
-## 🛠️ Stack Tecnologico
-
-- **Framework:** Django 5.2.7
-- **API:** Django REST Framework
-- **Auth:** Simple JWT
-- **Media:** Django Filer
-- **Database:** SQLite (dev) / PostgreSQL (prod)
-- **CORS:** django-cors-headers
-- **Config:** python-decouple
-
----
-
-## 📦 Funzionalità
-
-### Cataloghi Multilingua
-- Supporto 4 lingue: IT, EN, FR, ES
-- Slug automatici per URL SEO-friendly
-- Immagini copertina
-- Attivazione/disattivazione
-
-### Categorie Gerarchiche
-- Struttura ad albero (parent/child)
-- Associazione a cataloghi
-- Percorsi completi multilingua
-
-### Gestione File
-- Upload diretto o via Django Filer
-- Relazioni many-to-many con cataloghi/categorie
-- Ordinamento intelligente
-- Thumbnail automatici
-
-### Sicurezza
-- Autenticazione JWT
-- Permessi granulari
-- CORS configurabile
-- Tracciamento modifiche (created_by, updated_by)
-
----
-
-## 🔐 Sicurezza
-
-### ⚠️ IMPORTANTE per Produzione
-
-1. **Genera nuova SECRET_KEY**
-   ```bash
-   python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-   ```
-
-2. **Disabilita DEBUG**
-   ```bash
-   DEBUG=False
-   ```
-
-3. **Configura ALLOWED_HOSTS**
-   ```bash
-   ALLOWED_HOSTS=tuodominio.com,www.tuodominio.com
-   ```
-
-4. **Configura CORS**
-   ```bash
-   CORS_ALLOW_ALL_ORIGINS=False
-   CORS_ALLOWED_ORIGINS=https://tuofrontend.com
-   ```
-
-5. **Usa database PostgreSQL**
-   ```bash
-   pip install psycopg2-binary
-   # Configura DATABASE_URL in .env
-   ```
-
----
-
-## 🧪 Testing
-
-```bash
-# Esegui tutti i test
-python manage.py test
-
-# Test per app specifica
-python manage.py test catalogo
-
-# Test con coverage
-pip install coverage
-coverage run --source='.' manage.py test
-coverage report
-```
-
----
-
-## 📝 Admin Panel
-
-Accedi all'admin Django: `http://localhost:8000/admin/`
-
-**Funzionalità Admin:**
-- Gestione cataloghi con inline cartelle
-- Gestione categorie con relazioni
-- Upload multiplo file da Filer
-- Filtri e ricerca avanzata
-- Ordinamento drag & drop
-
----
-
-## 🤝 Contribuire
-
-1. Fork del progetto
-2. Crea branch feature (`git checkout -b feature/nome-feature`)
-3. Commit modifiche (`git commit -m 'Add: nuova feature'`)
-4. Push branch (`git push origin feature/nome-feature`)
-5. Apri Pull Request
-
----
-
-## 📄 Licenza
-
-[Specifica la tua licenza]
-
----
-
-## 👥 Autori
-
-- **Katia** - [katiaITS](https://github.com/katiaITS)
-
----
-
-## 📞 Supporto
-
-Per domande o problemi, apri una [issue](https://github.com/katiaITS/catalog-application-backend/issues).
+**Katia** - [GitHub](https://github.com/katiaITS)
