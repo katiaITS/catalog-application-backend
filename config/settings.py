@@ -142,7 +142,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Filer Settings
-FILER_ENABLE_PERMISSIONS = True  # Permessi su file/cartelle
+FILER_ENABLE_PERMISSIONS = False  # Usa solo permessi Django standard
 FILER_CANONICAL_URL = 'filer/'   # URL base Filer nell'admin
 THUMBNAIL_HIGH_RESOLUTION = True  # Thumbnail alta qualità
 THUMBNAIL_PROCESSORS = (
