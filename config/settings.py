@@ -263,15 +263,15 @@ CORS_ALLOW_HEADERS = [
 
 # Jazzmin Admin Theme Configuration
 JAZZMIN_SETTINGS = {
-    "site_title": "GIMA Admin",
-    "site_header": "GIMA Application",
-    "site_brand": "GIMA",
-    "welcome_sign": "Benvenuto nel pannello amministrativo GIMA",
+    "site_title": " Catalog Admin",
+    "site_header": "Catalog Application",
+    "site_brand": "Catalog",
+    "welcome_sign": "Benvenuto nel pannello amministrativo Catalog",
     
     # Logo
     "site_logo": None,  # Puoi aggiungere path al logo
     
-    # Theme colori GIMA (verde)
+    # Theme colori (verde)
     "theme": "flatly",  # Bootstrap theme base
     
     # Colori custom
@@ -299,7 +299,7 @@ JAZZMIN_SETTINGS = {
         "filer.folder": "fas fa-folder-open",
     },
     
-    # Colori tema (verde GIMA)
+    # Colori tema (verde)
     "custom_css": None,
     "custom_js": None,
 }
