@@ -1,8 +1,8 @@
 from rest_framework import viewsets #importa classe base ViewSet
 from rest_framework.permissions import IsAuthenticated #Permesso che richiede autenticazione
 
-from .models import Catalogo, Categoria, CartelleCatalogo
-from .serializers import CatalogoSerializer, CategoriaSerializer, CartelleCatalogoSerializer
+from .models import Catalogo, Categoria, Cartelle
+from .serializers import CatalogoSerializer, CategoriaSerializer, CartelleSerializer
 
 class CatalogoViewSet(viewsets.ModelViewSet): #ViewSet per gestire operazioni CRUD su Catalogo
      """
@@ -38,7 +38,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         serializer_class = CategoriaSerializer
         permission_classes = [IsAuthenticated]
 
-class CartelleCatalogoViewSet(viewsets.ModelViewSet):
+class CartelleViewSet(viewsets.ModelViewSet):
         """
         Endpoint generati:
         - GET    /api/cartelle/       → Lista tutte le cartelle
@@ -49,9 +49,13 @@ class CartelleCatalogoViewSet(viewsets.ModelViewSet):
         - DELETE /api/cartelle/{id}/  → Elimina cartella
 
         Include filtro per categoria e tipo_file. 
-        Anche qui incluse ottimizzazioni per ridurre query.
+        Ottimizzazione: prefetch delle relazioni many-to-many.
         """
-        #Fa una sola query ottimizzata per recuperare categoria e catalogo associati
-        queryset = CartelleCatalogo.objects.select_related('categoria', 'categoria__catalogo').all() #categoria__catalogo -> attravero categoria prendi catalogo
-        serializer_class = CartelleCatalogoSerializer
+        # Ottimizza query prefetchando le relazioni ManyToMany con cataloghi e categorie
+        queryset = Cartelle.objects.prefetch_related(
+            'cataloghi',      # Relazione M2M con Catalogo
+            'categorie',      # Relazione M2M con Categoria
+            'categorie__catalogo'  # Catalogo associato alle categorie
+        ).all()
+        serializer_class = CartelleSerializer
         permission_classes = [IsAuthenticated]

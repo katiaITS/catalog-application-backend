@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config, Csv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,17 +22,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xvv=8f!ic4uez2m0wm*5g#a(m98m6zut1s#^grd=a1_h9y)xzf'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'jazzmin',  # Admin theme
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',  # JWT Auth per DRF
     'rest_framework_simplejwt.token_blacklist',  # Per invalidare token JWT e crea tabelle DB per tracciare toker revocati
     'corsheaders',      # Gestione CORS
+    'debug_toolbar',  # Debug toolbar
     # App
     'catalogo',
     'utenti',
@@ -54,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',  # Debug toolbar
     'corsheaders.middleware.CorsMiddleware',  # CORS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -63,12 +67,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],  # Aggiungi directory templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -140,7 +148,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Filer Settings
-FILER_ENABLE_PERMISSIONS = True  # Permessi su file/cartelle
+FILER_ENABLE_PERMISSIONS = False  # Usa solo permessi Django standard
 FILER_CANONICAL_URL = 'filer/'   # URL base Filer nell'admin
 THUMBNAIL_HIGH_RESOLUTION = True  # Thumbnail alta qualità
 THUMBNAIL_PROCESSORS = (
@@ -193,8 +201,8 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), # Access token dura 1 ora
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Refresh token dura 7 giorni
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=config('JWT_ACCESS_TOKEN_MINUTES', default=60, cast=int)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=config('JWT_REFRESH_TOKEN_DAYS', default=7, cast=int)),
     'ROTATE_REFRESH_TOKENS': True, # Genera nuovo refresh ad ogni refresh
     'BLACKLIST_AFTER_ROTATION': True, # Invalida vecchio refresh token
     'UPDATE_LAST_LOGIN': True, # Aggiorna last_login in User model
@@ -215,20 +223,17 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-import os
-
 # Sviluppo: permetti tutti i domini (comodo per testing)
 # Produzione: solo domini specifici (sicuro)
-if os.environ.get('DEBUG', 'True') == 'True':
-    # SVILUPPO - Permissivo
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    # PRODUZIONE - Restrittivo solo i domini specificati
-    # Ogni nuovo dominio va aggiunto qui o le richieste saranno bloccate
-    CORS_ALLOWED_ORIGINS = [
-        'https://tuofrontend.com',      # Frontend produzione
-        'https://www.tuofrontend.com',  # Frontend produzione (www)
-    ]
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+
+# Se CORS_ALLOW_ALL_ORIGINS è False, usa questa lista
+if not CORS_ALLOW_ALL_ORIGINS:
+    CORS_ALLOWED_ORIGINS = config(
+        'CORS_ALLOWED_ORIGINS',
+        default='',
+        cast=Csv()
+    )
 
 #Permetti credenziali (cookie, auth headers)
 CORS_ALLOW_CREDENTIALS = True
@@ -255,3 +260,51 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+
+# Jazzmin Admin Theme Configuration
+JAZZMIN_SETTINGS = {
+    "site_title": "GIMA Admin",
+    "site_header": "GIMA Application",
+    "site_brand": "GIMA",
+    "welcome_sign": "Benvenuto nel pannello amministrativo GIMA",
+    
+    # Logo
+    "site_logo": None,  # Puoi aggiungere path al logo
+    
+    # Theme colori GIMA (verde)
+    "theme": "flatly",  # Bootstrap theme base
+    
+    # Colori custom
+    "custom_css": None,
+    "custom_js": None,
+    
+    # Sidebar
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    
+    # Top menu
+    "topmenu_links": [
+        {"name": "Home",  "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Sito", "url": "/", "new_window": True},
+    ],
+    
+    # Icone
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "catalogo.catalogo": "fas fa-folder",
+        "catalogo.categoria": "fas fa-list",
+        "catalogo.cartelle": "fas fa-file-alt",
+        "filer.folder": "fas fa-folder-open",
+    },
+    
+    # Colori tema (verde GIMA)
+    "custom_css": None,
+    "custom_js": None,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "flatly",
+    "dark_mode_theme": None,
+}

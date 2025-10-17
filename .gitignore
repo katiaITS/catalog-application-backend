@@ -1,3 +1,30 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+db.sqlite3
+media/
+staticfiles/
+
+# Env
+.env
+venv/
+env/
+
+# Node / Frontend
+gima-application/
+gima-application/node_modules/
+gima-application/dist/
+gima-application/.env
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
