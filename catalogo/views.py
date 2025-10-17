@@ -25,8 +25,8 @@ class CatalogoViewSet(viewsets.ModelViewSet): #ViewSet per gestire operazioni CR
      # Filtri
      filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
      filterset_class = CatalogoFilter
-     search_fields = ['nome', 'descrizione']
-     ordering_fields = ['nome', 'created_at', 'is_active']
+     search_fields = ['nome_it', 'nome_en', 'nome_fr', 'nome_es', 'slug']
+     ordering_fields = ['nome_it', 'created_at', 'is_active']
      ordering = ['-created_at']  # Ordinamento default
 
 class CategoriaViewSet(viewsets.ModelViewSet):
@@ -49,8 +49,8 @@ class CategoriaViewSet(viewsets.ModelViewSet):
         permission_classes = [IsAuthenticated]
         filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
         filterset_class = CategoriaFilter
-        search_fields = ['nome']
-        ordering_fields = ['nome', 'ordine']
+        search_fields = ['nome_it', 'nome_en', 'nome_fr', 'nome_es', 'slug']
+        ordering_fields = ['nome_it', 'created_at']
 
 class CartelleViewSet(viewsets.ModelViewSet):
         """
