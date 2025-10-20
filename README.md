@@ -59,7 +59,7 @@ python -m venv venv
 venv\Scripts\activate
 
 # Linux/Mac
-source venv/bin/activate
+source venv\Scripts\activate
 ```
 
 ### 3. Installa Dipendenze
