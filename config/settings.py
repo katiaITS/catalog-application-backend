@@ -159,6 +159,16 @@ THUMBNAIL_PROCESSORS = (
     'easy_thumbnails.processors.filters',
 )
 
+# Easy Thumbnails - Alias predefiniti per dimensioni comuni
+THUMBNAIL_ALIASES = {
+    '': {
+        'small': {'size': (100, 100), 'crop': True, 'quality': 85},
+        'medium': {'size': (300, 300), 'crop': True, 'quality': 85},
+        'large': {'size': (600, 600), 'crop': True, 'quality': 90},
+        'preview': {'size': (150, 150), 'crop': 'smart', 'quality': 85},
+    },
+}
+
 # Organizzazione file Filer per data (Anno/Mese/Giorno)
 FILER_STORAGES = {
     'public': {

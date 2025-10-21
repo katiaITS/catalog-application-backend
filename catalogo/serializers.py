@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Catalogo, Categoria, Cartelle
+from easy_thumbnails.files import get_thumbnailer
+from easy_thumbnails.exceptions import InvalidImageFormatError
 
 # Serializer per il modello Catalogo genera automaticamente i campi basandosi sul modello
 class CatalogoSerializer(serializers.ModelSerializer):
@@ -58,6 +60,7 @@ class CartelleSerializer(serializers.ModelSerializer):
     categorie_list = serializers.SerializerMethodField()
     file_url = serializers.SerializerMethodField()
     file_nome = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Cartelle
@@ -68,12 +71,13 @@ class CartelleSerializer(serializers.ModelSerializer):
             'categorie_list',
             'file_url',
             'file_nome',
+            'thumbnail_url',  # Nuovo campo
             'tipo_file',
             'is_active',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'tipo_file', 'cataloghi_list', 'categorie_list', 'file_url', 'file_nome']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'tipo_file', 'cataloghi_list', 'categorie_list', 'file_url', 'file_nome', 'thumbnail_url']
     
     # Metodo per ottenere lista cataloghi
     def get_cataloghi_list(self, obj):
@@ -87,17 +91,75 @@ class CartelleSerializer(serializers.ModelSerializer):
     
     # Metodi per campi calcolati
     def get_file_url(self, obj):
-        """Restituisce URL del file attivo"""
+        """Restituisce URL del file protetto tramite autenticazione"""
         file = obj.get_file() # Usa il metodo del modello per ottenere il file
        
-        # Se c'è request nel contestet, costruisce URL assoluto altrimenti ritorna URL relativo
         if file:
             request = self.context.get('request')
+            # Estrai il percorso relativo del file
+            file_path = file.name
+            
+            # Costruisci URL protetto
+            protected_url = f'/api/protected-media/{file_path}'
+            
             if request:
-                return request.build_absolute_uri(file.url)
-            return file.url
+                return request.build_absolute_uri(protected_url)
+            return protected_url
         return None
     
     # Metodo per ottenere il nome del file
     def get_file_nome(self, obj):
         return obj.get_filename()
+    
+    # Metodo per ottenere l'URL della thumbnail
+    def get_thumbnail_url(self, obj):
+        """
+        Genera thumbnail (300x300px) per file immagine.
+        Supporta sia FilerFileField che FileField normale.
+        Restituisce None per file non-immagine (PDF, video, etc.)
+        """
+        # Solo per immagini
+        if obj.tipo_file != 'Immagine':
+            return None
+        
+        try:
+            request = self.context.get('request')
+            
+            # File da Filer (FilerFileField)
+            if obj.file_da_filer:
+                # Verifica che sia un'immagine Filer
+                if hasattr(obj.file_da_filer, 'file') and obj.file_da_filer.file:
+                    # Usa easy_thumbnails integrato in filer
+                    thumbnailer = get_thumbnailer(obj.file_da_filer.file)
+                    thumbnail = thumbnailer.get_thumbnail({
+                        'size': (300, 300),
+                        'crop': True,
+                        'quality': 85,
+                        'upscale': False  # Non ingrandire immagini piccole
+                    })
+                    
+                    if thumbnail:
+                        protected_url = f'/api/protected-media/{thumbnail.name}'
+                        return request.build_absolute_uri(protected_url) if request else protected_url
+            
+            # File upload diretto (FileField)
+            elif obj.file_upload_diretto:
+                # Usa easy_thumbnails per FileField normale
+                thumbnailer = get_thumbnailer(obj.file_upload_diretto)
+                thumbnail = thumbnailer.get_thumbnail({
+                    'size': (300, 300),
+                    'crop': True,
+                    'quality': 85,
+                    'upscale': False
+                })
+                
+                # Verifica se la thumbnail è stata generata
+                if thumbnail:
+                    protected_url = f'/api/protected-media/{thumbnail.name}'
+                    return request.build_absolute_uri(protected_url) if request else protected_url
+        
+        except (InvalidImageFormatError, IOError, AttributeError, ValueError):
+            # File corrotto, formato non valido, o non è un'immagine
+            return None
+        
+        return None

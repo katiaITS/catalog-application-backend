@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter #DefaultRouter genera automaticamente anche la root view (/)
-from .views import CatalogoViewSet, CategoriaViewSet, CartelleViewSet
+from .views import CatalogoViewSet, CategoriaViewSet, CartelleViewSet, serve_protected_media
 
 #Crea istanza del router
 router =DefaultRouter()
@@ -16,4 +16,5 @@ router.register(r'cartelle', CartelleViewSet, basename='cartelle')
 #Include tutte le rotte generate dal router sotto il path di base /api/
 urlpatterns = [
     path('', include(router.urls)),
+    path('protected-media/<path:file_path>', serve_protected_media, name='protected_media'),
 ]

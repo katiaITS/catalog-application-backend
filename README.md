@@ -16,6 +16,8 @@ Questo progetto permette ai dipendenti dell'azienda di gestire cataloghi organiz
 
 ### Gestione File e Media
 - Caricamento e eliminazione file tramite media manager integrato (Filer)
+- Generazione automatica thumbnail per immagini (300x300px)
+- Servizio file protetto tramite autenticazione Django
 - Spostamento file tra cartelle
 - Importazione massiva di file multipli
 - Ordinamento alfabetico intelligente (A1 < A2 < A10)
@@ -24,6 +26,12 @@ Questo progetto permette ai dipendenti dell'azienda di gestire cataloghi organiz
 - Sistema di ruoli e permessi differenziati (Superuser, Staff, User)
 - Creazione e gestione account utenti
 - Controllo accessi basato su ruolo
+
+### API REST
+- Permessi ibridi: lettura pubblica, scrittura protetta
+- Filtri avanzati per ricerca (nome, data, stato)
+- Ordinamento dinamico dei risultati
+- Endpoint custom per cartelle per catalogo
 
 ### Pannello Admin Personalizzato
 - Interfaccia moderna e responsive (Jazzmin Theme)
@@ -38,6 +46,8 @@ Questo progetto permette ai dipendenti dell'azienda di gestire cataloghi organiz
 - **Django REST Framework** - Gestione API REST
 - **djangorestframework-simplejwt** - Autenticazione tramite token JWT
 - **Django Filer 3.3.2** - Media manager avanzato
+- **easy-thumbnails** - Generazione automatica thumbnail per immagini
+- **django-filter** - Filtri avanzati per API REST
 - **Pillow** - Elaborazione immagini
 - **django-jazzmin** - Tema admin moderno
 
@@ -75,8 +85,11 @@ copy .env.example .env
 # Linux/Mac
 cp .env.example .env
 
-# Modifica .env con i tuoi valori
-# IMPORTANTE: Genera una nuova SECRET_KEY per produzione!
+# Genera una nuova SECRET_KEY sicura
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+# Copia l'output nel file .env alla voce SECRET_KEY
+# IMPORTANTE: Non committare mai il file .env su Git!
 ```
 
 ### 5. Applica Migrations
@@ -160,6 +173,8 @@ Admin panel: `http://localhost:8000/admin/`
 
 **Cartelle** (File Manager)
 - Supporto upload diretto o selezione da Django Filer
+- Generazione automatica thumbnail per immagini
+- URL protetti tramite autenticazione Django
 - Rilevamento automatico tipo file (PDF, immagine, video, documento)
 - Ordinamento intelligente alfanumerico (A1 < A2 < A10)
 - Relazioni **M:N** con Catalogo e Categoria tramite tabelle ponte
